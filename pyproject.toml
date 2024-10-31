@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "geoldb"
+version = "0.1.0"
+description = ""
+authors = ["alemishch <mishchenko.ad@phystech.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+alembic = "^1.13.3"
+asyncpg = "^0.30.0"
+sqlalchemy = "^2.0.36"
+pydantic-settings = "^2.6.0"
+pandas = "^2.2.3"
+openpyxl = "^3.1.5"
+uvicorn = "^0.32.0"
+fastapi = "^0.115.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
