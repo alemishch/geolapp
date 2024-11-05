@@ -15,6 +15,9 @@ pandas = "^2.2.3"
 openpyxl = "^3.1.5"
 uvicorn = "^0.32.0"
 fastapi = "^0.115.4"
+streamlit = "^1.39.0"
+requests = "^2.32.3"
+streamlit-aggrid = "^1.0.5"
 
 
 [build-system]
