@@ -18,11 +18,26 @@ st.set_page_config(
 
 
 st.title("Работа с геологическими образцами")
-st.write("test")
 
+navigation = st.sidebar.radio("Меню", ["Главная", "Скважины", "Образцы"])
 
-st.sidebar.header("Категория")
-category = st.sidebar.radio("Выберите категорию:", ("Скважины", "Образцы"))
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #f0f2f6;
+    }
+    .sidebar .sidebar-content {
+        background-image: linear-gradient(#4B8BBE, #306998);
+        color: white;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #306998;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 def fetch_data(endpoint, params=None):
     try:
@@ -103,8 +118,16 @@ def display_table(data, columns, key):
         	st.error("Unknown selected_rows type")
         	return None
 
-# Drill Holes Section
-if category == "Скважины":
+if navigation == "Главная":
+    st.markdown(
+        """
+        <h1 style='text-align: center; color: #4B8BBE;'>Добро пожаловать в Геологическую Базу Данных!</h1>
+        <p style='text-align: center;'>Используйте боковую панель для навигации по разделам "Скважины" и "Образцы".</p>
+        """,
+        unsafe_allow_html=True
+    )
+
+elif navigation == "Скважины":
     st.header("Скважины")
     sub_category = st.selectbox("Выберите действие:", ("Показать всё", "Фильтр"))
     
@@ -164,7 +187,7 @@ if category == "Скважины":
                     display_table(samples_data, ["id", "sample_name", "depth_m", "full_name", "texture", "structure", "ore_mineralization"], key=f"samples_in_drill_hole_{drill_hole_id}")
 
 # Samples Section
-elif category == "Образцы":
+elif navigation == "Образцы":
     st.header("Образцы")
     sub_category = st.selectbox("Выберите действие:", ("Показать всё", "Фильтр"))
     
