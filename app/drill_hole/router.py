@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.drill_hole.dao import DrillHoleDAO
-from app.drill_hole.schemas import SDrillHole
+from app.drill_hole.schemas import SDrillHole, SDrillHoleAdd
 from app.drill_hole.rb import RBDrillHole
 from typing import Union, List
 
 
 router = APIRouter(prefix='/drill_hole', tags=['Скважины'])
 
+@router.post("/add/")
+async def add_drill_hole(drill_hole: SDrillHoleAdd):
+    check = await DrillHoleDAO.add(**drill_hole.dict())
+    if check:
+        return {"message": "Скважина успешно добавлена!", "drill_hole": drill_hole}
+    else:
+        return {"message": "Ошибка при добавлении скважины!"}
 
 @router.get("/", summary="Получить скважины")
 async def get_all_drill_holes(request_body: RBDrillHole = Depends()) -> list[SDrillHole]:

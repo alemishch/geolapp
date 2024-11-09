@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Form, File, UploadFile
+from fastapi.responses import JSONResponse
 from typing import List, Union
 
 from app.data_samples.dao import (
@@ -18,7 +19,14 @@ from app.data_samples.schemas import (
     SVein,
     SMetasomatite,
     SRareOreMineralization,
-    SAccessoryMineral
+    SAccessoryMineral,
+    SPhotosAdd,
+    SMineralCompositionAdd,
+    SOreMineralizationAdd,
+    SVeinAdd,
+    SMetasomatiteAdd,
+    SRareOreMineralizationAdd,
+    SAccessoryMineralAdd
 )
 
 from app.data_samples.rb import (
@@ -40,44 +48,94 @@ MODEL_MAPPINGS = {
     "photos": {
         "dao": PhotosDAO,
         "schema": SPhotos,
+        "create_schema": SPhotosAdd,
         "rb_schema": RBPhotos
     },
     "mineral_composition": {
         "dao": MineralCompositionDAO,
         "schema": SMineralComposition,
+        "create_schema": SMineralCompositionAdd,
         "rb_schema": RBMineralComposition
     },
     "ore_mineralization": {
         "dao": OreMineralizationDAO,
         "schema": SOreMineralization,
+        "create_schema": SOreMineralizationAdd,
         "rb_schema": RBOreMineralization
     },
     "vein": {
         "dao": VeinDAO,
         "schema": SVein,
+        "create_schema": SVeinAdd,
         "rb_schema": RBVein
     },
     "metasomatite": {
         "dao": MetasomatiteDAO,
         "schema": SMetasomatite,
+        "create_schema": SMetasomatiteAdd,
         "rb_schema": RBMetasomatite
     },
     "rare_ore_mineralization": {
         "dao": RareOreMineralizationDAO,
         "schema": SRareOreMineralization,
+        "create_schema": SRareOreMineralizationAdd,
         "rb_schema": RBRareOreMineralization
     },
     "accessory_mineral": {
         "dao": AccessoryMineralDAO,
         "schema": SAccessoryMineral,
+        "create_schema": SAccessoryMineralAdd,
         "rb_schema": RBAccessoryMineral
     }
 }
 
+    
 for model_name, components in MODEL_MAPPINGS.items():
     dao = components["dao"]
+    create_schema = components["create_schema"]
     schema = components["schema"]
     rb_schema = components["rb_schema"]
+    
+    if model_name == "photos":
+        @router.post(f"/{model_name}/add/", response_model=rb_schema, summary=f"Добавить {model_name}")
+        async def add_photos(
+            sample_id: int = Form(...),
+            photo_type: str = Form(...),
+            file: UploadFile = File(...),
+            dao=Depends(lambda: dao)
+        ):
+            ALLOWED_TYPES = ["macro", "straight_light", "reflected_light"]
+            if photo_type not in ALLOWED_TYPES:
+                raise HTTPException(status_code=400, detail="Неверный тип фотографии.")
+            
+            folder_path = os.path.join("img", photo_type, f"sample_{sample_id}")
+            os.makedirs(folder_path, exist_ok=True)
+            file_location = os.path.join(folder_path, file.filename)
+            
+            try:
+                with open(file_location, "wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
+                
+                # Save to DB
+                photo_record = await dao.add(sample_id=sample_id, photo_type=photo_type, file_path=file_location)
+                return photo_record
+            except Exception:
+                raise HTTPException(status_code=500, detail="Ошибка при загрузке фотографии.")
+            
+        pass  
+    else:
+        @router.post(f"/{model_name}/add/", response_model=rb_schema, summary=f"Добавить {model_name}")
+        async def add_model_data(data: create_schema, dao=Depends(lambda: dao)):
+            try:
+                new_record = await dao.add(**data.dict())
+                if new_record:
+                    return new_record
+                else:
+                    raise HTTPException(status_code=400, detail=f"Ошибка при добавлении {model_name}.")
+            except HTTPException as he:
+                raise he
+            except Exception:
+                raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера.")
     
     async def get_all(model_name=model_name, dao=dao, schema=schema, rb_schema=rb_schema, request_body: rb_schema = Depends()):
         """
@@ -94,7 +152,10 @@ for model_name, components in MODEL_MAPPINGS.items():
         filters = request_body.to_dict()
         records = await dao.find_all(**filters)
         if not records:
-            return {'message': f'No records found for {model_name} with specified filters.'}
+            return JSONResponse(
+                status_code=200,
+                content={"message": "Нет данных для отображения", "error": True}
+            )
         return records
 
     async def find_by_sample_id(sample_id: int, model_name=model_name, dao=dao, schema=schema):

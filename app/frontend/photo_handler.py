@@ -89,8 +89,8 @@ def display_photos(photo_records):
     Args:
         photo_records (List[dict]): List of photo records fetched from the API.
     """
-    # Define expected photo types
     EXPECTED_PHOTO_TYPES = ["macro", "straight_light", "reflected_light"]
+    names = ["Фото макро", "Прямой свет", "Отражённый свет"]
     
     # Map photo types to their paths
     photo_map = map_photos(photo_records, EXPECTED_PHOTO_TYPES)
@@ -100,7 +100,7 @@ def display_photos(photo_records):
     
     for idx, ptype in enumerate(EXPECTED_PHOTO_TYPES):
         with cols[idx]:
-            st.write(f"**{ptype.replace('_', ' ').title()}**")
+            st.write(names[idx])
             photo_path = photo_map.get(ptype)
             if photo_path:
                 image = load_image(photo_path)
