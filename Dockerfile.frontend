@@ -1,0 +1,36 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Poetry file
+COPY pyproject.toml poetry.lock ./
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - \
+    && ln -s /root/.local/bin/poetry /usr/local/bin/poetry \
+    && poetry --version
+
+# Install dependencies (without virtual environment)
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi
+
+# Copy the entire project into the container
+COPY . .
+
+# Expose port
+EXPOSE 8501
+
+# Set environment variables
+ENV PYTHONPATH=/app
+
+# Command to start the Streamlit application
+CMD ["streamlit", "run", "app/frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

@@ -3,9 +3,9 @@ services:
     image: postgres:latest
     container_name: postgres_fast_api
     environment:
-      POSTGRES_USER: geo
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: fast_api
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5433:5432"
@@ -28,13 +28,55 @@ services:
                -c wal_buffers=16MB
                -c default_statistics_target=100
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres_user -d postgres_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
       interval: 30s
       timeout: 10s
       retries: 5
     restart: unless-stopped
     tty: true
     stdin_open: true
+
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: backend_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"  # FastAPI
+    volumes:
+      - ./img:/app/img  # Mount img 
+      - .:/app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    command: ["bash", "app/scripts/start.sh"]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: frontend_app
+    depends_on:
+      - backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    command: ["streamlit", "run", "app/frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
 
 volumes:
   pgdata:

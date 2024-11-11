@@ -3,6 +3,7 @@ import pandas as pd
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select, func
 from alembic.config import Config
 from alembic import command
 import sys
@@ -43,9 +44,19 @@ def apply_migrations():
 def handle_percentage(column):
     return pd.to_numeric(column, errors='coerce')  # Convert non-numeric to NaN, which SQLAlchemy will interpret as NULL
 
+async def is_database_empty(session: AsyncSession) -> bool:
+    # Example: Check if the 'samples' table is empty
+    result = await session.execute(select(func.count(Sample.id)))
+    sample_count = result.scalar_one()
+    return sample_count == 0
+
 # Function to load data into the database
 async def load_data():
     async with async_session() as session:
+        if not await is_database_empty(session):
+            print("Database already contains data. Skipping data loading.")
+            return  # Exit the function to prevent duplicate data
+
         async with session.begin():
             # Sample Table
             df_metadata = pd.read_excel(file_paths["metadata"]).dropna(how='all')
@@ -151,13 +162,13 @@ async def load_data():
 
 # Main function to apply migrations and load data
 def main():
-    print("Applying migrations...")
-    apply_migrations()
-    print("Migrations applied.")
+    #print("Applying migrations...")
+    #apply_migrations()
+    #print("Migrations applied.")
     
     print("Loading data...")
     asyncio.run(load_data())
-    print("Data loaded successfully.")
+    #print("Data loaded successfully.")
 
 if __name__ == "__main__":
     main()

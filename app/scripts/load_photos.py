@@ -5,12 +5,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import select, func
 from app.database import async_session_maker
 from app.samples.models import Sample, Photos
-
+from app.scripts.load_data import is_database_empty
 
 async def load_photos():
     async with async_session_maker() as session:
+        if not await is_database_empty(session):
+            print("Database already contains data. Skipping data loading.")
+            return  # Exit the function to prevent duplicate data
+            
         # Get all samples
         result = await session.execute(select(Sample))
         samples = result.scalars().all()

@@ -8,7 +8,7 @@ from photo_handler import display_photos
 from add_data import add_drill_hole, add_sample
 
 
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://backend:8000"
 
 
 st.set_page_config(
